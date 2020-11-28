@@ -1,0 +1,266 @@
+html, div, body, canvas {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+  -webkit-app-region: drag;
+  background: black;
+  overflow: hidden;
+}
+
+#container {
+  display: -webkit-flex;
+  -webkit-flex-direction: column;
+  text-align: center;
+}
+
+canvas {
+  width:100vw;
+  height: 100vh;
+  -webkit-transition: 1s opacity;
+  background: black;
+}
+
+panel {
+  position: absolute;
+  top: 0vh;
+  left: 130vw;
+  width: 25vw;
+  height: 30vh;
+  border-radius: 0vh;
+  border: inset;
+  outline: none;
+  background: url(../images/panel.png);
+  background-size: 100% 200%;
+  opacity: .9;
+   z-index: 1005;
+  -webkit-app-region: no-drag;
+}
+
+/* settings {
+  position: absolute;
+  top: 2vh;
+  left: 91vw;
+  width: 6vw;
+  height: 7vh;
+  border-radius: 0vh;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: url(../images/settings.png);
+  background-size: 6vw 7vh;
+  opacity: 0.0;
+   z-index: 1010;
+  -webkit-app-region: no-drag;
+}
+*/
+
+splash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0vh;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: url(../images/splash.jpg);
+  background-size: 100% 100%;
+  background-color:black;
+  opacity: 1.0;
+   z-index: 1021;
+  -webkit-app-region: no-drag;
+}
+
+#main {
+  position: relative;
+  background: black;
+  width:100%;
+  height: 100%;
+  text-align: center;
+}
+
+.invisible {
+  -webkit-transition: 0s opacity;
+  opacity: 0;
+}
+
+
+button {
+  position: absolute;
+  top: 90vh;
+  left:46vw;
+  width: 8vh;
+  height: 8vh;
+  border-radius: 3vh;
+  border: 1px none;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+  cursor: pointer;
+  background: url(../images/camera-button.png), black;
+  background-size: 8vh 8vh;
+  z-index: 1000;
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-app-region: no-drag;
+}
+
+button:disabled {
+  opacity: 0.3;
+}
+
+button:hover {
+  border-color: black;
+}
+
+button:active {
+  border-color: black;
+  -webkit-transform: translate3d(1px, 1px, 0);
+}
+
+buttonRight {
+  top: 90vh;
+  left:86vw;
+  width: 8vh;
+  height: 8vh;
+  border-radius: 3vh;
+  border: 1px none;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+  cursor: pointer;
+  background: url(../images/right.png) center right, white;
+  background-size: 8vh 8vh;
+  position: absolute;
+  z-index: 1000;
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-app-region: no-drag;
+}
+
+buttonRight:disabled {
+  opacity: 0.3;
+}
+
+buttonRight:hover {
+  border-color: black;
+}
+
+buttonRight:active {
+  border-color: black;
+  -webkit-transform: translate3d(1px, 1px, 0);
+}
+
+buttonLeft {
+  top: 90vh;
+  left:66vw;
+  width: 8vh;
+  height: 8vh;
+  border-radius: 3vh;
+  border: 1px none;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+  cursor: pointer;
+  background: url(../images/left.png) center right, white;
+  background-size: 8vh 8vh;
+  position: absolute;
+  z-index: 1000;
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-app-region: no-drag;
+}
+
+buttonLeft:disabled {
+  opacity: 0.3;
+}
+
+buttonLeft:hover {
+  border-color: black;
+}
+
+buttonLeft:active {
+  border-color: black;
+  -webkit-transform: translate3d(1px, 1px, 0);
+}
+
+buttonUp {
+  top: 90vh;
+  left:26vw;
+  width: 8vh;
+  height: 8vh;
+  border-radius: 3vh;
+  border: 1px none;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+  cursor: pointer;
+  background: url(../images/up.png) center left, white;
+  background-size: 8vh 8vh;
+  position: absolute;
+  bottom: 10px;
+  z-index: 1000;
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-app-region: no-drag;
+}
+
+buttonUp:disabled {
+  opacity: 0.3;
+}
+
+buttonUp:hover {
+  border-color: black;
+}
+
+buttonUp:active {
+  border-color: black;
+  -webkit-transform: translate3d(1px, 1px, 0);
+}
+
+buttonDown {
+  top: 90vh;
+  left:6vw;
+  width: 8vh;
+  height: 8vh;
+  border-radius: 3vh;
+  border: 1px none;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+  cursor: pointer;
+  background: url(../images/down.png) center left, white;
+  background-size: 8vh 8vh;
+  position: absolute;
+  bottom: 10px;
+  z-index: 1000;
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-app-region: no-drag;
+}
+
+buttonDown:disabled {
+  opacity: 0.3;
+}
+
+buttonDown:hover {
+  border-color: black;
+}
+
+buttonDown:active {
+  border-color: black;
+  -webkit-transform: translate3d(1px, 1px, 0);
+}
+
+#no-camera {
+  top: 330px;
+  font-family: Impact;
+  font-size: 35px;
+  position: relative;
+  z-index: 1000;
+  height: 0;
+  color: white;
+  text-shadow: 0 0 2px black;
+  display: none;
+}

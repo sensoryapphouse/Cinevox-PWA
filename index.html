@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CineVox - speech and sound effects</title>
+ <link href="css/index.css" rel="stylesheet"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="canvas2image.js"></script>
+<script type="text/javascript" src="webgl-utils.js"></script>
+	<script src="js/recorderjs/recorder.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+<script id="shader-1-fs" type="f">
+  precision mediump float;
+  varying vec2 vTextureCoord;
+  uniform sampler2D texture0;
+  uniform vec2 resolution;
+  uniform vec2 mouse;
+  uniform int index;
+  uniform float time;
+  uniform float Param1;
+  uniform float Param2;
+  uniform float Param3;
+
+  void main(void) {
+  mediump vec2 cent = vec2(0.5, 0.5);
+	mediump vec2 xy = 1.0-gl_FragCoord.xy / resolution;
+	if (index == 1)
+    { // stretch distortion filter
+     mediump vec2 normCoord = 2.0 * xy - 1.0;
+     mediump vec2 normCenter = 2.0 * vec2(0.5,mouse.x) - 1.0;
+
+     normCoord -= normCenter;
+     mediump vec2 s = sign(normCoord);
+     normCoord = abs(normCoord);
+     normCoord = 0.5 * normCoord + 0.5 * smoothstep(0.25, 0.5, normCoord-Param3) * normCoord;
+     normCoord = s * normCoord;
+
+     normCoord += normCenter;
+
+     xy.y = normCoord.y / 2.0 + 0.5;
+    }
+  else if (index == 2)
+    { // stretch distortion filter
+     mediump vec2 normCoord = 2.0 * xy - 1.0;
+     mediump vec2 normCenter = 2.0 * vec2(mouse.y,0.5) - 1.0;
+
+     normCoord -= normCenter;
+     mediump vec2 s = sign(normCoord);
+     normCoord = abs(normCoord);
+     normCoord = 0.5 * normCoord + 0.5 * smoothstep(0.25, 0.5, normCoord-Param3) * normCoord;
+     normCoord = s * normCoord;
+
+     normCoord += normCenter;
+
+     xy.x = normCoord.x / 2.0 + 0.5;
+	}
+	else if (index == 3)
+	{ // box
+     mediump vec2 normCoord = 2.0 * xy - 1.0;
+     mediump vec2 normCenter = 2.0 * vec2(mouse.y,mouse.x) - 1.0;
+
+     normCoord -= normCenter;
+     mediump vec2 s = sign(normCoord);
+     normCoord = abs(normCoord);
+     normCoord = 0.5 * normCoord + 0.5 * smoothstep(0.25, 0.5, normCoord-Param3) * normCoord;
+     normCoord = s * normCoord;
+
+     normCoord += normCenter;
+
+     xy = normCoord / 2.0 + 0.5;
+	}
+  else if (index == 0)
+  { // bulge
+    lowp float aspectRatio = resolution.x/resolution.y;
+   	lowp float radius = 0.2+Param3/4.;
+   	lowp float scale = 0.2+Param3;
+   	lowp vec2 cent = vec2(mouse.y, mouse.x);
+    mediump vec2 textureCoordinateToUse = vec2(xy.x, (xy.y * aspectRatio + cent.y - cent.y * aspectRatio));
+  	lowp float dist = distance(cent, textureCoordinateToUse);
+  	textureCoordinateToUse = xy;
+
+  	if (dist < radius)
+  	{
+      	textureCoordinateToUse -= cent;
+      	lowp float percent = 1.0 - ((radius - dist) / radius) * scale;
+      	percent = percent * percent;
+
+      	textureCoordinateToUse = textureCoordinateToUse * percent;
+      	textureCoordinateToUse += cent;
+      	xy = textureCoordinateToUse;
+  	}
+
+  	cent.y = 1.0 - cent.y; // = vec2(0.5 + cos(-time*.34)/6. - sin(time*0.32) / 7., 0.5 - sin(-time*0.38) / 8.);
+      textureCoordinateToUse = vec2(xy.x, (xy.y * aspectRatio + cent.y - cent.y * aspectRatio));
+  	dist = distance(cent, textureCoordinateToUse)*0.5;
+  	textureCoordinateToUse = xy;
+
+  	if (dist < radius)
+  	{
+      	textureCoordinateToUse -= cent;
+        	mediump float p = 1.0 - ((radius - dist) / radius) * scale * .75;
+      	p = p * p;
+
+      	textureCoordinateToUse = textureCoordinateToUse * p;
+      	textureCoordinateToUse += cent;
+      	xy = textureCoordinateToUse;
+
+     	}
+
+//   gl_FragColor = texture2D(texture0, xy);
+  }
+  else if (index == 4)
+  { // swirl
+   	 lowp vec2 cent = vec2(mouse.y, mouse.x);
+     mediump float radius = 0.3+Param3;
+     mediump float angle = 0.2+Param3;
+     mediump vec2 textureCoordinateToUse = xy;
+     mediump float dist = distance(cent, xy);
+     if (dist < radius)
+     {
+         textureCoordinateToUse -= cent;
+         mediump float percent = (radius - dist) / radius;
+         mediump float theta = percent * percent * angle * 8.0;
+         mediump float s = sin(theta);
+         mediump float c = cos(theta);
+         textureCoordinateToUse = vec2(dot(textureCoordinateToUse, vec2(c, -s)), dot(textureCoordinateToUse, vec2(s, c)));
+         textureCoordinateToUse += cent;
+         xy = textureCoordinateToUse;
+     }
+  }
+
+  mediump vec2 cPos = -0.8 + 2.0 * xy;
+	mediump float cLength = length(cPos);
+	mediump float i = clamp(cos(cLength*12.0-time)/4. + 1.75,0.0,1.0);
+	mediump vec2 uv;
+	if (Param2 == 1.0)
+		uv = xy+(cPos/cLength)*cos(cLength*12.0-time*4.0)*0.03;
+	else
+		uv = xy+(cPos/cLength)*cos(cLength*12.0-time*4.0)*0.006;
+
+	mediump vec3 col = texture2D(texture0,uv).xyz * vec3(i);
+
+	gl_FragColor = vec4(col,1.0);
+    }
+</script>
+
+<script id="shader-3-fs" type="f">
+    precision highp float;
+    varying vec2 vTextureCoord;
+    uniform sampler2D texture0;
+    uniform vec2 resolution;
+    uniform vec2 mouse;
+    uniform int index;
+    uniform float time;
+    uniform float Param1;
+    uniform float Param2;
+    uniform float Param3;
+
+const float PI = 3.14159;
+
+vec3 frctl(vec2 a)
+{
+	a = a * 4.;
+	a = vec2(a.x - 2., a.y - 2.);
+
+	vec2 c = (vec2(mouse.x, mouse.y) - 0.4)*1.2*(0.6+sin(time)*.4);
+	vec2 z = a;
+
+	float r = 256.0, g = 1.0,b = 1.0, g2=1.0, b2=1.0;
+
+	for(float i = 0.0; i < 4.0; i++ ){
+		vec2 zold = z;
+		z = vec2(z.x * z.x - z.y * z.y, z.y * z.x + z.x * z.y);
+		z = vec2(z.x + c.x,z.y + c.y);
+		if((z.x * z.x + z.y * z.y) > 3.0){
+			r = i;
+			g = z.x;
+			b = z.y;
+			g2 = zold.x;
+			b2 = zold.y;
+			break;
+		}
+	}
+	float q1 = log(log(g*g+b*b)/(2.0*log(2.0)))/log(2.5);
+	r = (r-q1)*(1.0/20.0);
+	r = min(r, 1.0);
+	float d1 = abs(cos(atan(b,g)));
+	float q2 = log(log(g2*g2+b2*b2)/(2.0*log(2.0)))/log(2.0);
+	float d2 = abs(cos(atan(b2,g2)));
+	float blend = -q2/(q1-q2);
+	//blend = ((6.0*blend-15.0)*blend+10.0)*blend*blend*blend;
+	d1 *= blend;
+	d2 *= 1.0-blend;
+	float d = abs(d1-d2);
+	if (r == 1.)
+		return vec3(0.0);
+	else
+		return vec3((1.0-d)*(1.0-r)+0.0001,(1.0-sqrt(sqrt(d)))*(1.0-r),clamp(r, 0.0, 1.0));
+}
+
+vec3 colorMap(float v)
+{
+	v *= 4.0;
+	float r = min(v + 0.5, -v + 2.5);
+	float g = min(v - 0.5, -v + 3.5);
+	float b = min(v - 1.5, -v + 4.5);
+
+	return vec3(g, b, r);
+}
+
+
+vec2 cmult(vec2 x, vec2 y) {
+	float a = x.x;
+	float b = x.y;
+	float c = y.x;
+	float d = y.y;
+	return vec2(a*c-b*d, a*d+b*c);
+}
+
+vec2 f(vec2 x,vec2 c) {
+	return cmult(x,x)+c;
+}
+
+vec3 colormap(float x){
+	x*=4.;
+	return vec3( sin(x), sin(3.14/4.+x),sin(3.14/2.+x));
+}
+
+vec2 lissajous(float t, float a, float b, float d) {
+	return vec2(sin(a*t+d),sin(b*t));
+}
+
+vec3 fractal( vec2 v, vec2 m ){
+	float x = v.x;
+	float y = v.y;
+
+	for ( int i = 0; i < 10; i++ ){
+		if ( x*x + y*y > 16.0 )
+			return vec3( log(1.0+float(i))/log(1.0+float(10)), 0, 0);
+
+		float x2 = x * x - y * y + m.x;
+		float y2 = 2.0 * x * y + m.y;
+
+		x = x2;
+		y = y2;
+
+	}
+	return vec3( 0, 0, 0.0);
+}
+
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+  void main(void) {
+	mediump vec2 xy = 1.0-gl_FragCoord.xy / resolution;
+	lowp vec4 tx = texture2D(texture0, xy);
+	vec3 col;
+	if (index == 0) {
+    		col = frctl(xy);
+  }
+  else if (index == 1)
+	{
+		vec2 p = 2.5*(xy - vec2(0.5,0.5));
+		p.x *= resolution.x/resolution.y;
+		vec2 m = ( vec2(mouse.x, mouse.y) - vec2(0.5,0.5));
+
+		for(float i = 0.0 ; i < 10.; i+= 1.0)
+		{
+			col = vec3( 0.0,0.0,0.0);
+			if(length(p) > 10.)
+			{
+				float dist = i/20.;
+				col = colormap(dist);
+				break;
+			} else {
+				vec2 c = .5*lissajous(time/10.,5.,4.,0.)+m;
+				p = f(p,c);
+			}
+		}
+	}
+  else if (index == 2)
+	{
+		vec2 position = xy * vec2(2.5, 3.) + vec2(-2., -1.5);
+
+		vec2 r = vec2(0.0);
+		vec3 c = vec3(0.0);
+		for (int i = 0; i < 8; ++i) {
+			if (dot(r, r) > 4.0) {
+				c = colorMap(pow(float(i)/8., 0.8));
+				break;
+			}
+			r = position + (mouse.x+mouse.y)*vec2(r.x*r.x - sin(time)*r.y*r.y*r.x - r.y*r.y, 2.0*r.x*r.y);
+		}
+		col = c;
+	}
+	else if (index == 3)
+	{
+	    vec2 position = (3.+0.5*sin(time*0.5))*( gl_FragCoord.xy / resolution -0.5);
+	    float x = position.x;
+	    float y = position.y;
+
+	    for(int i = 0; i < 10; i++)
+	    {
+	        float x_ = x*x*x - y*y*x -2.*x*y*y + abs(mouse.x - 0.5) *4.-1.0;
+	        float y_ = 2.*x*x*y+x*x*y-y*y*y +mouse.y*2.-1.;
+	        x = x_;
+	        y = y_;
+	        if(sqrt(x*x+y*y)>1.4)
+	        {
+	            col = vec3(0.8*(sin(0.5*float(i))),cos(0.258*float(i)), 0.75*abs(cos(float(i))));
+	            break;
+	        }
+	    }
+	    if(sqrt(x*x+y*y)<2.)
+	        col = vec3(0.0, 0.0, 0.0);
+	}
+	else if (index == 4)
+	{
+		// fragcoord to pos
+		vec2 v = (gl_FragCoord.xy - resolution/2.0) / min(resolution.x,resolution.y) * 2.0 * (0.8+sin(time)*.2);
+
+		col = fractal( v, vec2(mouse.x, mouse.y) );
+	}
+
+	if (length(col) < 0.6) {
+		 col = tx.xyz;
+		 if (Param2 == 1.0) { // do noise
+		  float c = rand(gl_FragCoord.xy / time);
+		  if (c > 0.8)
+			  col = vec3(c);
+	    }
+	}
+
+// 	if (Param2 == 1.0)
+// 	{ // do noise
+// 		float c = rand(xy / time);
+// 		if (c > 0.8)
+// 			col = vec3(c);
+// 	}
+	col = mix(vec3((col.x+col.y+col.z)/3.), col, Param3);
+	gl_FragColor = vec4(col,1.0);
+
+}
+</script>
+
+<script id="shader-4-fs" type="f">
+precision mediump float;
+varying vec2 vTextureCoord;
+uniform sampler2D texture0;
+uniform vec2 resolution;
+uniform vec2 mouse;
+uniform int index;
+uniform float time;
+uniform float Param1;
+uniform float Param2;
+uniform float Param3;
+#define PI2 6.28318530717959
+
+float chessboard(vec2 uv, vec2 nuv)
+{
+	bool pu = (mod(ceil(uv.x * nuv.x), 2.0) == 0.0);
+	bool pv = (mod(ceil(uv.y * nuv.y), 2.0) == 0.0);
+
+	return (pu && !pv) || (!pu && pv) ? 0.0 : 1.0;
+}
+
+vec4 texture(vec2 pos)
+{
+	float fval = chessboard(pos, vec2(6.0, 12.0));
+	return vec4(fval, fval, fval, 1.0);
+}
+
+const float LAYERS = 4.0;
+const float SPEED = 0.001;
+const float DENSITY	= 0.05;
+const float SATURATION	= 8.0;
+const float BRIGHTNESS = 4.0;
+mediump float rand(vec2 co){ return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453); }
+
+vec3 hsv2rgb(float h,float s,float v) {
+	return mix(vec3(1.),clamp((abs(fract(h+vec3(3.,2.,1.)/3.)*6.-3.)-1.),0.,1.),s)*v;
+}
+
+void main(void) {
+
+  mediump vec2 xy = 1.0-gl_FragCoord.xy / resolution;
+  vec4 tx = texture2D(texture0, xy);
+  vec3 tx3 = vec3(tx.x, tx.y, tx.z);
+
+  if (index == 0) {
+		if (Param2 == 1.0)
+			tx3 = 1.0-tx3;
+		tx3 *= 0.4 + float(Param3)*1.5;
+		vec2 pos = xy - vec2(mouse.y, mouse.x);
+		pos.x *= (resolution.x / resolution.y);
+
+		float u = length(pos);
+		float v = atan(pos.y, pos.x);
+
+		vec3 col = clamp(vec3(-sin(v*4.0+v*2.0+time), sin(u*8.0+v-time), cos(u+v*3.0+time))*16.0, 0.0, 1.0);
+		if (length(col) < .2)
+			gl_FragColor = vec4(tx3, 1.0);
+		else
+			gl_FragColor = vec4(col*tx3, 1.0);
+  }
+  else if (index == 1)
+  {
+  	vec2 p1 = xy - vec2(mouse.y, mouse.x);
+  	float tmp = 10.0 - clamp(float(Param3)*8.0, 0.0, 8.5);
+  	vec2 p = p1 * tmp;
+
+  	float d = sin(length(p)+time), a = sin(mod(atan(p.y, p.x) + time + sin(d), 3.1416/3.)*3.), v = a + d, m = sin(length(p)*4.0-a+time);
+  	vec3 c = vec3(-v*sin(m*sin(-d)+time*.1), v*m*sin(tan(sin(-a))*sin(-a*3.)*3.), mod(v,m));
+  	if (Param2 == 1.0)
+  		c.z = 1.0 - c.z;
+  	c *= length(p1)*2.;
+  	if (length(c) < 0.2)
+  	{
+  		if (Param2 == 1.0)
+  			c = 1.0-tx3;
+  		else
+  			c = tx3;;
+  	}
+  	gl_FragColor = vec4(c, 1.0);
+  }
+  else if (index == 2)
+  {
+ 		if (Param2 == 1.0)
+  		tx3 = 1.0-tx3;
+   	tx3 *= 0.4 + float(Param3)*1.5;
+
+  	vec2 away_from_center = xy - vec2(mouse.y, mouse.x);
+  	away_from_center *= away_from_center;
+  	float phi01 = mod(atan(away_from_center.y, away_from_center.x * (float(Param1)+10.)/110.), 1.0);
+  	float r01 = mod(0.001 / (0.001 + dot(away_from_center, away_from_center)) + time/20. + mouse.y/2., 1.0);
+
+  	vec2 pos = vec2(phi01, r01);
+  	vec4 col = texture(pos);
+  	if (col.x > 0.8)
+  	{
+  		if (Param2 == 1.0)
+  			gl_FragColor = vec4(1.0-tx3, 1.0);
+  		else
+  			gl_FragColor = vec4(tx3, 1.0);
+  	}
+  	else {
+  		if (Param2 == 1.0)
+  			gl_FragColor = 1.0-col;
+  		else
+  			gl_FragColor = col;
+  	}
+  }
+  else if (index == 3)
+  {
+    vec2 position = (100.0-float(Param3)*50.0) * (2.0 * (xy - vec2(mouse.y, mouse.x)));
+  	float r = length(position);
+  	float a = atan(position.y, position.x);
+
+  	float d = r - a + PI2;
+   	float n = PI2 * float(int(d / PI2));
+  	float k = a + n;
+  	float randm = sin(floor(0.07 * k * k + time));
+  	if (Param2 == 1.0)
+  	{
+  		gl_FragColor = vec4(vec3(fract(100.0*randm))*(1.0-tx3.r), 1.0);
+  	}
+  	else
+  	{
+  		gl_FragColor = vec4(fract(randm*vec3(10.0, 1000.0, 100000.0))*tx3, 1.0);
+  	}
+  }
+  else if (index == 4)
+  {
+		vec2 pos = gl_FragCoord.yx - vec2(resolution.y*(1.0-mouse.x), resolution.x*(1.0-mouse.y));
+		float dist = length(pos) / resolution.y;
+		mediump vec2 coord = vec2(pow(dist, 0.1), atan(pos.x, pos.y) / PI2);
+
+		mediump vec3 color = vec3(0.0);
+		float s = 20.; // - clamp(floor(float(Param1)/5.), 10., 20.);
+		float b = BRIGHTNESS*SATURATION;
+		if (Param2 == 1.0)
+			b /= 3.;
+		for (float i = 3.0; i < 5.0; ++i)
+		{
+			float t = i*10.0 + time*i*i;
+			t *= 0.5 + mouse.y/2.0;
+			if (i == 4.0)
+				t = -t;
+			float r = coord.x - (t*SPEED);
+			float c = fract(coord.y + i*.125);
+			vec2  p = vec2(r, c*.5);
+			vec2 uv = fract(p*s);
+			float a = 1.0-length(uv*2.0-1.0);
+			vec3  m = fract(r*s * vec3(-0.25, 0.5, 1.0))+i*.2;
+			float d = (rand(floor(p*s))-DENSITY)*b;
+			d = clamp(d*dist, 0.0, 1.0);
+			color = max(color, a*m*d);
+		}
+		color.x = clamp(color.x-float(Param3), 0.0, 1.0);
+		color.y = clamp(color.y-float(Param3), 0.0, 1.0);
+
+		if (Param2 == 1.0)
+			tx3 = 1.0-tx3;
+		if (length(color) < 0.3)
+			color = tx3;
+		gl_FragColor =  vec4(color, 1.0);
+  }
+
+
+}
+</script>
+
+<script id="shader-2-fs" type="f">
+    precision mediump float;
+    varying vec2 vTextureCoord;
+    uniform sampler2D texture0;
+    uniform vec2 resolution;
+    uniform vec2 mouse;
+    uniform int index;
+    uniform float time;
+    uniform float Param1;
+    uniform float Param2;
+    uniform float Param3;
+
+  float rand(vec2 co) {
+      return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+  }
+
+  float nose(float s)
+  {
+  	return mod(sin(s * 431.), 1.);
+  }
+
+  float interp(float a, float b, float x)
+  {
+  	return a + (b - a) * (cos(3. * x) * -.5 + .5);
+  }
+
+  float pnoise(float s)
+  {
+  	float is = float(int(s));
+  	return interp(nose(is), nose(is + 1.), s - is);
+  }
+
+  void main(void) {
+
+  vec2 xy = 1.0-gl_FragCoord.xy / resolution;
+  vec4 tx = texture2D(texture0, xy);
+	if (index == 0)
+	{
+		vec2 cPos = xy  - vec2(mouse.y, mouse.x);
+		float cLength = length(cPos)*Param3;
+
+		vec2 uv =  xy + ( cPos / cLength ) * cos( cLength * 45. - time * 4.0 ) * .1;
+
+		gl_FragColor = vec4( uv, .3, 1);
+	}
+		else if (index == 1)
+	{
+		vec2 position = gl_FragCoord.xy/resolution.y-vec2((resolution.x/resolution.y)/2.0, 0.5) + 0.5 - vec2(1.0-mouse.y,1.0-mouse.x);
+		float value = sin(1.0-distance(position,vec2(sin(atan(position.y, position.x)+time),sin(time+atan(time, position.y))))*32.0+time*8.0)*0.5+0.5;
+
+		gl_FragColor = vec4(value,(1.0-value)*Param3,0, 1.0 );
+	}
+	else if (index == 2)
+	{
+		float y = (gl_FragCoord.y - resolution.y*(1.0-mouse.x)) * pow(9.0, sin(time / 2.0)) * sin((gl_FragCoord.x - resolution.x*(1.0-mouse.y)) / 2000.0) + time;
+		float value = floor(mod(y, 4.0));
+		gl_FragColor = vec4(sin(y)*Param3, -sin(y), value*Param3, 1.0);
+	}
+	else if (index == 3)
+	{
+		vec2 v = (gl_FragCoord.xy+resolution.x*vec2(mouse.y, mouse.x) - vec2(resolution.x, resolution.y)/40.0) / resolution.x * 2.0;
+		v.x-=200.0;
+		v.y-=200.0;
+		float col = 0.00;
+
+		for(float i = 0.0; i < 5.; i++)
+		{
+		  	float a = i * 14.296;
+			col += cos(6.*(v.y * cos(a) + v.x * sin(a) + sin(8.0*0.004*sin(time)/20.)*100.0 ));
+		}
+
+		col /= 3.0;
+
+		gl_FragColor = vec4(col*1.50*Param3, -col*Param3,-col, 1.0);
+	}
+	else if (index == 4) {
+		vec2 position = xy - vec2(mouse.y, mouse.x);
+
+		float radius = 1.0 - length(position) * 4.0;
+		float angle = 5.0 * atan(position.y, position.x);
+		float t = time / 2.;
+		float r = sin(radius + sin(angle + sin(4.0*radius + angle + t)));
+		float g = sin(radius + t) + sin(angle + sin(5.0*radius));
+		float b = sin(sin(3.0 * radius + angle) + t * 2.0 + angle);
+		if (r < 0.01) r = 1.0;
+		if (g < 0.01) g = mouse.y;
+		if (b < 0.01) b = 1.0;
+		if (r > 0.9 && g > 0.9 && b > 0.9)
+			r = g = b = 0.0;
+		gl_FragColor = vec4( vec3(r*Param3,g*Param3,b)*0.8, 1.0 );
+	}
+	else if (index == 5) {
+		float color = sin(time/5.) + pnoise((xy.x+1.0-mouse.y)*5.) + pnoise((xy.y+1.0-mouse.x)*5.);
+		gl_FragColor = vec4( mod(color, .625)*Param3*1.4, mod(color, .25), mod(color, .5), 1. );
+	}
+	if (Param2 == 1.0) { // do noise
+		float c = rand(gl_FragCoord.xy / time);
+		if (c > 0.8)
+			gl_FragColor = vec4(c);
+	}
+}
+</script>
+
+<script id="shader-vs" type="v">
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+
+    varying vec2 vTextureCoord;
+
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vTextureCoord = aTextureCoord;
+    }
+</script>
+</head>
+
+<!--<body onload="camStart();">-->
+
+<div id="container">
+  <div id="main">
+    <canvas id="webgl-canvas" top="0"></canvas>
+<div id="no-camera">No Webcam!</div>
+    <div id="close-button">x</div>
+    <splash class = "btn" enabled></splash>
+    <panel id =class = "img" enabled>   </panel>
+	  <button enabled  download="FotoFrez.jpg"></button>
+    <buttonRight disabled></buttonRight>
+    <buttonLeft disabled></buttonLeft>
+    <buttonUp disabled></buttonUp>
+    <buttonDown disabled></buttonDown>
+    <progress value="0" max="100" id = "progress"></progress>
+    <settings class="btn" enabled></settings>
+
+    </div>
+  </div>
+</body>
+
+</html>
